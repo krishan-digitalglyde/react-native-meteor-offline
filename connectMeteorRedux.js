@@ -6,11 +6,11 @@ import { createStore, combineReducers } from 'redux';
 import { AsyncStorage } from 'react-native';
 import _ from 'lodash';
 import EventEmitter from 'events';
-import { persistStore, autoRehydrate, createTransform } from 'redux-persist';
+import { persistStore, autoRehydrate } from 'redux-persist';
 
 const meteorReduxReducers = (
-  state = { reactNativeMeteorOfflineRecentlyAdded: [] },
-  action
+    state = { reactNativeMeteorOfflineRecentlyAdded: [] },
+    action
 ) => {
   const { type, collection, id, fields, cleared } = action;
   // console.log(type);
@@ -60,9 +60,9 @@ const meteorReduxReducers = (
     case 'REMOVE_AFTER_RECONNECT':
       // todo: check for removed docs
       const { removed } = action;
-      const withoutRemoved = _.omit(
-        state.reactNativeMeteorOfflineRecentlyAdded,
-        removed
+      const withoutRemoved = _.without(
+          state.reactNativeMeteorOfflineRecentlyAdded,
+          removed
       );
       if (getData().db[collection]) getData().db[collection].remove({ _id: { $in: removed } });
       return {
@@ -71,8 +71,8 @@ const meteorReduxReducers = (
       };
     case 'persist/REHYDRATE':
       if (
-        typeof Meteor.ddp === 'undefined' ||
-        Meteor.ddp.status === 'disconnected'
+          typeof Meteor.ddp === 'undefined' ||
+          Meteor.ddp.status === 'disconnected'
       ) {
         return action.payload;
       }
@@ -88,21 +88,16 @@ const meteorReduxReducers = (
 const meteorReduxEmitter = new EventEmitter();
 
 const initMeteorRedux = (
-  customDebugger = undefined,
-  preloadedState = undefined,
-  enhancer = undefined,
-  customReducers = undefined
+    customDebugger = undefined,
+    preloadedState = undefined,
+    enhancer = undefined,
+    customReducers = undefined
 ) => {
   // console.log(preloadedState, enhancer)
   const newReducers = customReducers !== undefined
-    ? combineReducers({ ...customReducers, meteorReduxReducers })
-    : meteorReduxReducers;
-  const MeteorStore = createStore(
-    newReducers,
-    customDebugger,
-    preloadedState,
-    enhancer
-  );
+      ? combineReducers({ ...customReducers, meteorReduxReducers })
+      : meteorReduxReducers;
+  const MeteorStore = createStore(newReducers, customDebugger, preloadedState, enhancer);
 
   MeteorStore.loaded = () => {
     meteorReduxEmitter.emit('rehydrated');
@@ -112,9 +107,9 @@ const initMeteorRedux = (
     // restore collections to minimongo
     _.each(MeteorStore.getState(), (collection, key) => {
       const correctedCollection = _.chain(collection)
-        .map((doc) => doc)
-        .filter('_id')
-        .value();
+          .map((doc) => doc)
+          .filter('_id')
+          .value();
       // add the collection if it doesn't exist
       if (!getData().db[key]) {
         // add collection to minimongo
@@ -150,9 +145,9 @@ const initMeteorRedux = (
         fields._id = id;
         const getCollection = MeteorStore.getState()[collection];
         if (
-          !getCollection ||
-          !getCollection[id] ||
-          !_.isEqual(getCollection[id], fields)
+            !getCollection ||
+            !getCollection[id] ||
+            !_.isEqual(getCollection[id], fields)
         ) {
           // don't insert if it exists
           MeteorStore.dispatch({ type: 'ADDED', collection, id, fields });
@@ -201,17 +196,18 @@ class MeteorOffline {
     this.firstConnection = true;
     this.subscriptions = [];
     this.collections = [];
+
     this.store = options.store || initMeteorRedux(options.debugger || undefined, undefined, autoRehydrate());
     this.persistor = persistStore(
-      this.store,
-      {
-        storage: AsyncStorage,
-        debounce: options.debounce || 1000,
-        blacklist: ['reactNativeMeteorOfflineRecentlyAdded'],
-      },
-      () => {
-        this.store.loaded();
-      }
+        this.store,
+        {
+          storage: AsyncStorage,
+          debounce: options.debounce || 1000,
+          blacklist: ['reactNativeMeteorOfflineRecentlyAdded'],
+        },
+        () => {
+          this.store.loaded();
+        }
     );
     console.log('initializing');
     Meteor.waitDdpConnected(() => {
@@ -224,7 +220,7 @@ class MeteorOffline {
     });
   }
 
-  subReady (uniqueName) {
+  subReady(uniqueName) {
     return this.subscriptions[uniqueName].ready && !this.offline;
   }
 
@@ -248,9 +244,9 @@ class MeteorOffline {
     const justParams = params.slice(0, params.length - 1);
     _.set(this.subscriptions, `${uniqueName}.${name}`, name);
     _.set(
-      this.subscriptions,
-      `${uniqueName}.${params}`,
-      JSON.stringify(justParams)
+        this.subscriptions,
+        `${uniqueName}.${params}`,
+        JSON.stringify(justParams)
     );
     let subHandle = Meteor.subscribe(name, ...params);
     if (this.offline) {
@@ -264,10 +260,10 @@ class MeteorOffline {
     }
     // run callback if it's offline and ready for the first time
     if (
-      this.offline &&
-      hasCallback &&
-      this.store.getState().ready &&
-      !this.subscriptions[uniqueName].ready
+        this.offline &&
+        hasCallback &&
+        this.store.getState().ready &&
+        !this.subscriptions[uniqueName].ready
     ) {
       // handled by meteor.subscribe if online
       const callback = _.once(params[params.length - 1]);
@@ -279,14 +275,14 @@ class MeteorOffline {
 
   collection(collection, subscriptionName) {
     if (
-      Meteor.status().connected &&
-      this.firstConnection &&
-      _.get(this.subscriptions, `${subscriptionName}.ready`)
+        Meteor.status().connected &&
+        this.firstConnection &&
+        _.get(this.subscriptions, `${subscriptionName}.ready`)
     ) {
       this.firstConnection = false;
       const t = new Date();
       const recentlyAddedIds = this.store.getState()
-        .reactNativeMeteorOfflineRecentlyAdded;
+          .reactNativeMeteorOfflineRecentlyAdded;
       const cachedIds = _.sortBy(_.keys(this.store.getState()[collection]));
       // console.log(`got cached in ${new Date() - t}ms`);
       const removed = _.sortBy(_.difference(cachedIds, recentlyAddedIds)) || [];
