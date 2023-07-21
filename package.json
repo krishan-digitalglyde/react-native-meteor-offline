@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/varunwyest/react-native-meteor-offline.git"
+    "url": "git+https://github.com/krishan-digitalglyde/react-native-meteor-offline.git"
   },
   "keywords": [
     "react",
@@ -31,7 +31,7 @@
   "dependencies": {
     "lodash": "^4.17.4",
     "next-frame": "^0.2.3",
-    "react-native-meteor": "git+https://github.com/MaheshMaharana/react-native-meteor.git",
+    "react-native-meteor": "git+https://github.com/krishan-digitalglyde/react-native-meteor.git",
     "redux": "^3.6.0",
     "redux-persist": "^4.0.1",
     "events": "^1.1.1"
